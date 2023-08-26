@@ -51,7 +51,7 @@ fun WatterBottle(
 
     Box(
         modifier = modifier
-            .fillMaxWidth(0.6f)
+            .width(200.dp)
             .height(600.dp)
     ) {
 
