@@ -1,14 +1,16 @@
 package com.example.waterbottel
 
-import androidx.annotation.FloatRange
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -17,59 +19,55 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.waterbottel.ui.theme.WaterBottelTheme
-import java.lang.Math.abs
-
-val Blue700 = Color(0xff279EFF)
-val Blue500 = Color(0xff40F8FF)
 
 @Composable
-fun WaterBottleOld(
+fun WatterBottle(
     modifier: Modifier = Modifier,
-    emptyBottleColor: Color = Color.White,
-    darkWavesColor: Color = Blue700,
-    lightWavesColor: Color = Blue500,
-    lightColor: Boolean = false,
-    drinkAmount: Int,
-    @FloatRange(from = 0.0, to = 1.0) waterPercentage: Float,
+    totalWaterAmount: Int,
+    unit: String,
+    usedWaterAmount: Int,
+    waterWavesColor: Color = Color(0xff279EFF),
+    bottleColor: Color = Color.White,
+    capColor: Color = Color(0xFF0065B9)
 ) {
-    Box(modifier = modifier, contentAlignment = Alignment.BottomCenter) {
-        var animation by remember {
-            mutableStateOf(false)
-        }
 
-        var text = animateIntAsState(
-            targetValue = if (animation) drinkAmount else 0,
-            tween(durationMillis = 1000)
-        )
-        val isPercentageGreaterThan1 = waterPercentage > 1
-        val afterMathPercentage =
-            animateFloatAsState(
-                targetValue =
-                if (animation && !isPercentageGreaterThan1) 1 - waterPercentage
-                else if (isPercentageGreaterThan1) 0f
-                else 1f,
+    val waterPercentage = animateFloatAsState(
+        targetValue = (usedWaterAmount.toFloat() / totalWaterAmount.toFloat()),
+        label = "Water Waves animation",
+        animationSpec = tween(durationMillis = 1000)
+    ).value
 
-                tween(durationMillis = 1000)
-            ).value
+    val usedWaterAmountAnimation = animateIntAsState(
+        targetValue = usedWaterAmount,
+        label = "Used water amount animation",
+        animationSpec = tween(durationMillis = 1000)
+    ).value
 
-        LaunchedEffect(key1 = true) {
-            animation = true
-        }
+    Box(
+        modifier = modifier
+            .fillMaxWidth(0.6f)
+            .height(600.dp)
+    ) {
 
         Canvas(modifier = Modifier.fillMaxSize()) {
             val width = size.width
             val height = size.height
 
-            val bottlePath = Path().apply {
-                //Bottle body
+            val capWidth = size.width * 0.55f
+            val capHeight = size.height * 0.13f
+
+            //Draw the bottle body
+            val bodyPath = Path().apply {
                 moveTo(width * 0.3f, height * 0.1f)
                 lineTo(width * 0.3f, height * 0.2f)
                 quadraticBezierTo(
-                    0f, height * 0.3f,
+                    0f, height * 0.3f, // The pulling point
                     0f, height * 0.4f
                 )
                 lineTo(0f, height * 0.95f)
@@ -93,129 +91,92 @@ fun WaterBottleOld(
 
                 close()
             }
+            clipPath(
+                path = bodyPath
+            ) {
+                // Draw the color of the bottle
+                drawRect(
+                    color = bottleColor,
+                    size = size,
+                    topLeft = Offset(0f, 0f)
+                )
 
-            drawPath(
-                path = bottlePath,
-                color = emptyBottleColor
-            )
+                //Draw the water waves
+                val waterWavesYPosition = (1 - waterPercentage) * size.height
 
-//            Light Water Waves
-            if (lightColor)
-                clipPath(path = bottlePath) {
-                    val point0 = Offset(0f + 35f, height)
-                    val point1 = Offset(0f + 35f, height * afterMathPercentage + 10f)
-                    val point2 = Offset(width * 0.1f + 38f, height * afterMathPercentage)
-                    val point3 = Offset(width * 0.2f + 38f, height * afterMathPercentage + 50f)
-                    val point4 = Offset(width * 0.3f + 38f, height * afterMathPercentage + 10f)
-                    val point5 = Offset(width * 0.5f + 38f, height * afterMathPercentage + 75f)
-                    val point6 = Offset(width * 0.7f + 38f, height * afterMathPercentage - 30f)
-                    val point7 = Offset(width * 0.9f + 38f, height * afterMathPercentage + 20)
-                    val point8 = Offset(width * 1.1f + 38f, height * afterMathPercentage - 10f)
-                    val waterPath = Path().apply {
-                        moveTo(point0.x, point0.y)
-                        fromToQuadBezier(point0, point1)
-                        lineTo(point1.x, point1.y)
-                        fromToQuadBezier(point1, point2)
-                        fromToQuadBezier(point2, point3)
-                        fromToQuadBezier(point3, point4)
-                        fromToQuadBezier(point4, point5)
-                        fromToQuadBezier(point5, point6)
-                        fromToQuadBezier(point6, point7)
-                        fromToQuadBezier(point7, point8)
-                        close()
-                    }
-                    drawPath(
-                        path = waterPath,
-                        color = lightWavesColor,
+                val wavesPath = Path().apply {
+                    moveTo(
+                        x = 0f,
+                        y = waterWavesYPosition
                     )
-                }
-
-            //Dark Water waves
-            clipPath(path = bottlePath) {
-                val point0 = Offset(0f, height)
-                val point1 = Offset(0f, height * afterMathPercentage + 10f)
-                val point2 = Offset(width * 0.1f, height * afterMathPercentage)
-                val point3 = Offset(width * 0.2f, height * afterMathPercentage + 50f)
-                val point4 = Offset(width * 0.3f, height * afterMathPercentage + 10f)
-                val point5 = Offset(width * 0.5f, height * afterMathPercentage + 75f)
-                val point6 = Offset(width * 0.7f, height * afterMathPercentage - 10f)
-                val point7 = Offset(width * 0.9f, height * afterMathPercentage + 20)
-                val point8 = Offset(width * 1.1f, height * afterMathPercentage - 10f)
-                val waterPath = Path().apply {
-                    moveTo(point0.x, point0.y)
-                    fromToQuadBezier(point0, point1)
-                    lineTo(point1.x, point1.y)
-                    fromToQuadBezier(point1, point2)
-                    fromToQuadBezier(point2, point3)
-                    fromToQuadBezier(point3, point4)
-                    fromToQuadBezier(point4, point5)
-                    fromToQuadBezier(point5, point6)
-                    fromToQuadBezier(point6, point7)
-                    fromToQuadBezier(point7, point8)
-                    lineTo(width, height)
+                    lineTo(
+                        x = size.width,
+                        y = waterWavesYPosition
+                    )
+                    lineTo(
+                        x = size.width,
+                        y = size.height
+                    )
+                    lineTo(
+                        x = 0f,
+                        y = size.height
+                    )
                     close()
                 }
                 drawPath(
-                    path = waterPath,
-                    color = darkWavesColor,
+                    path = wavesPath,
+                    color = waterWavesColor,
                 )
             }
 
-            //Bottle cap
+            //Draw the bottle cap
             drawRoundRect(
-                color = Color(0xFF70BDF2),
-                size = Size(size.width * 0.55f, size.height * 0.13f),
-                topLeft = Offset(size.width * 0.23f, size.height * 0.03f),
+                color = capColor,
+                size = Size(capWidth, capHeight),
+                topLeft = Offset(size.width / 2 - capWidth / 2f, 0f),
                 cornerRadius = CornerRadius(45f, 45f)
             )
 
+
+        }
+        val text = buildAnnotatedString {
+            withStyle(
+                style = SpanStyle(
+                    color = if (waterPercentage > 0.5f) bottleColor else waterWavesColor,
+                    fontSize = 44.sp
+                )
+            ) {
+                append(usedWaterAmountAnimation.toString())
+            }
+            withStyle(
+                style = SpanStyle(
+                    color = if (waterPercentage > 0.5f) bottleColor else waterWavesColor,
+                    fontSize = 22.sp
+                )
+            ) {
+                append(" ")
+                append(unit)
+            }
         }
 
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 60.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+                .fillMaxHeight(),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = text.value.toString(),
-                style = MaterialTheme.typography.displayMedium,
-                color = if (waterPercentage >= 0.5f) Color.White else darkWavesColor,
-                fontSize = 40.sp,
-            )
-
-            Spacer(modifier = Modifier.width(5.dp))
-            Text(
-                text = "ml",
-                style = MaterialTheme.typography.displayMedium,
-                color = if (waterPercentage >= 0.5f) Color.White else darkWavesColor,
-                fontSize = 22.sp,
-                modifier = Modifier
-                    .padding(top = 10.dp)
-            )
+            Text(text = text)
         }
     }
 }
 
-fun Path.fromToQuadBezier(from: Offset, to: Offset) {
-    quadraticBezierTo(
-        from.x, from.y,
-        abs(from.x + to.x) / 2f,
-        abs(from.y + to.y) / 2
-    )
-}
 
 @Preview
 @Composable
-fun PreviewWatterBottle() {
-    WaterBottelTheme {
-        WaterBottleOld(
-            waterPercentage = 0.8f, modifier = Modifier
-                .width(136.dp)
-                .height(330.dp),
-            drinkAmount = 1000
-        )
-    }
-
+fun WaterBottlePreview() {
+    WatterBottle(
+        totalWaterAmount = 2500,
+        unit = "ml",
+        usedWaterAmount = 120
+    )
 }
